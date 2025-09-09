@@ -1,0 +1,94 @@
+/* --- Main Gallery Container --- */
+.gallery-container {
+    max-width: 70vw;
+    margin: 60px auto;
+}
+
+/* =================================================================== */
+/* Center the Isotope grid container                                   */
+/* =================================================================== */
+.gallery-grid {
+    margin: 0 auto; /* Works with isFitWidth: true in JS to center the grid */
+}
+
+/* =================================================================== */
+/* BASE WIDTHS (Desktop, 6 Columns)                                    */
+/* Using a 10px gutter (5 gutters = 50px total)                        */
+/* =================================================================== */
+.gallery-grid .grid-sizer {
+  width: calc((100% - 50px) / 6); /* Base unit is 1 column */
+}
+.gallery-grid .gallery-item.is-portrait,
+.gallery-grid .gallery-item.is-vertical {
+    width: calc(((100% - 50px) / 6) * 2 + 10px); /* Vertical & Horizontal take 3 columns */
+}
+
+.gallery-grid .gallery-item.is-horizontal {
+  width: calc(((100% - 50px) / 6) * 2 + 10px); /* Vertical & Horizontal take 3 columns */
+}
+.gallery-grid .gallery-item.is-ultrawide {
+  width: calc(((100% - 50px) / 6) * 4 + 30px); /* Ultrawide items take 4 columns */
+}
+
+/* =================================================================== */
+/* ITEM STYLING (No changes needed here)                               */
+/* =================================================================== */
+.gallery-grid .gallery-item {
+  margin-bottom: 10px; /* Vertical gutter */
+}
+.gallery-grid .gallery-item-content {
+  position: relative;
+  display: block;
+  height: 0;
+  opacity: 0;
+  transform: scale(0.95);
+  filter: blur(20px); 
+  transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.gallery-grid .gallery-item-content .lazy-load-image-background img {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.gallery-grid .gallery-item.is-visible .gallery-item-content {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0);
+}
+
+/* =================================================================== */
+/* RESPONSIVE BREAKPOINTS (Scaled down gracefully)                     */
+/* =================================================================== */
+
+@media (max-width: 1440px) { /* Fallback to 4 Columns, 3 gutters (30px) */
+    .gallery-grid .grid-sizer { width: calc((100% - 30px) / 4); }
+    .gallery-grid .gallery-item.is-portrait { width: calc((100% - 30px) / 4); } /* P: 1 of 4 */
+    .gallery-grid .gallery-item.is-vertical,
+    .gallery-grid .gallery-item.is-horizontal { width: calc(((100% - 30px) / 4) * 2 + 10px); } /* V & H: 2 of 4 */
+    .gallery-grid .gallery-item.is-ultrawide { width: 100%; } /* UW: 4 of 4 */
+}
+
+@media (max-width: 992px) { /* Fallback to 2 Columns, 1 gutter (10px) */
+    .gallery-grid .grid-sizer { width: calc((100% - 10px) / 2); }
+    .gallery-grid .gallery-item.is-portrait,
+    .gallery-grid .gallery-item.is-vertical { width: calc((100% - 10px) / 2); } /* P & V: 1 of 2 */
+    .gallery-grid .gallery-item.is-horizontal,
+    .gallery-grid .gallery-item.is-ultrawide { width: 100%; } /* H & UW: 2 of 2 */
+}
+
+/* CORRECTED: Fallback to 1 Column with a high-specificity selector */
+@media (max-width: 576px) {
+    /* By listing each class, we ensure this rule has enough specificity to override the others */
+    .gallery-grid .grid-sizer,
+    .gallery-grid .gallery-item.is-portrait,
+    .gallery-grid .gallery-item.is-vertical,
+    .gallery-grid .gallery-item.is-horizontal,
+    .gallery-grid .gallery-item.is-ultrawide {
+      width: 100%;
+    }
+}
