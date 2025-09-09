@@ -63,8 +63,8 @@ const Header = () => {
         checked={isDarkMode}
         onChange={toggleDarkMode}
         size={24}
-        sunColor="#FFC947"
-        moonColor="#BA68C8"
+        sunColor="#ffab40"
+        moonColor="#b388ff"
       />
     </header>
   );
