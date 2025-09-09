@@ -1,52 +1,78 @@
 /* --- The Main Header Bar --- */
 .main-header {
     position: sticky;
-    top: 0;
+    top: 2rem;
     z-index: 1000;
     display: flex;
-    justify-content: space-between;
+    margin-left: auto;
+    margin-right: auto;
+    justify-content: space-evenly;
+    max-width: fit-content;
+    gap: 1.5rem;
     align-items: center;
-    padding: 15px 30px;
+    padding: .8rem 1.5rem ;
     background-color: var(--header-bg);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     transform: translateY(0);
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    border-radius:2rem;
   }
   
   .main-header.is-hidden {
-    transform: translateY(-100%);
+    transform: translateY(-170%);
+  }
+
+  :root {
+    font-family: Inter, sans-serif;
+    font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
+  }
+  @supports (font-variation-settings: normal) {
+    :root { font-family: InterVariable, sans-serif; }
   }
   
   /* --- The Title --- */
   .main-header h1 {
     margin: 0;
-    font-size: 1.5rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1.2rem;
     color: var(--header-text);
     transition: opacity 0.3s ease, transform 0.4s ease;
-    transform: scale(1);
-    opacity: 1;
   }
   
   .main-header.is-hidden h1 {
     opacity: 0;
-    transform: scale(0.9);
   }
   
   /* --- The DarkModeSwitch Component --- */
-  /* The library creates a div wrapper that we can target */
   .main-header > div {
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    transform: scale(1);
   }
   
-  /* =================================================================== */
-  /* THE MINIMIZE EFFECT for the Toggle                                  */
-  /* =================================================================== */
   .main-header.is-hidden > div {
     transform: translateY(calc(100% + 15px)) scale(0.9);
   }
   
-  /* Set the SVG colors using our CSS variables */
+  /* =================================================================== */
+  /* !! THE FINAL, DEFINITIVE FIX !!                                     */
+  /* =================================================================== */
+  
+  /* 
+    This first rule sets the default color for the SVG. The library
+    correctly applies this to the STROKE (the outline).
+  */
   .main-header svg {
       color: var(--header-text);
+      stroke-width: .1rem !important;
+  }
+  
+  /* 
+    This SECOND, more specific rule targets ONLY the visible sun and moon
+    shapes. We use "!important" to override the stubborn inline style
+    that the library adds for the FILL color. This will not break the
+    crescent animation.
+  */
+  .main-header svg > g > circle,
+  .main-header svg > g > path {
+    fill: var(--header-text) !important;
   }
