@@ -1,54 +1,55 @@
 /* --- The Main Toggle Button --- */
 .theme-toggle-button {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    /* REMOVED: position, top, right, z-index */
-  }
-  
-  /* --- The Track the Thumb Slides In --- */
-  .toggle-track {
-    width: 50px;
-    height: 23px;
-    background-color: #d3d3d3; /* Light mode track color */
-    border-radius: 15px;
-    padding: 3px;
-    transition: background-color 0.4s ease;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-  
-  /* --- The Thumb (The Sun/Moon) --- */
-  .toggle-thumb {
-    width: 25px;
-    height: 25px;
-    background-color: #ffffff; /* Sun color */
-    border-radius: 50%;
-    position: relative;
-    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    /* The crescent moon is created with a box-shadow */
-    box-shadow: inset -8px -8px 0 0 transparent; /* Hidden in light mode */
-  }
-  
-  /* =================================================================== */
-  /*                          DARK MODE STYLES                           */
-  /* =================================================================== */
-  
-  /* When the body has data-theme="dark", these styles apply */
-  [data-theme='dark'] .toggle-track {
-    background-color: #4d5156; /* Dark mode track color */
-  }
-  
-  [data-theme='dark'] .toggle-thumb {
-    /* Move the thumb to the right */
-    transform: translateX(24px); 
-    
-    /* Moon color */
-    background-color: #f0f0f0; 
-    
-    /* The magic: create the crescent moon shape with a shadow */
-    /* The shadow color should match the track color */
-    box-shadow: inset -6px -6px 0 0 #1f1f1f;
-  }
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  /* This creates a "clipping mask" for the circular animation */
+  overflow: hidden; 
+  position: relative;
+  width: 24px; /* Match SVG size */
+  height: 24px; /* Match SVG size */
+}
+
+/* --- Container for the two icons --- */
+.icon-container {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s cubic-bezier(0.46, 0.03, 0.52, 0.96);
+}
+
+/* --- Shared SVG Icon Styles --- */
+.sun, .moon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: opacity 0.5s cubic-bezier(0.46, 0.03, 0.52, 0.96);
+  color: var(--header-text); /* Use a CSS variable for the color */
+}
+
+/* =================================================================== */
+/*                          ANIMATION STATES                           */
+/* =================================================================== */
+
+/* --- Light Mode (Default) --- */
+.moon {
+  opacity: 0; /* Moon is invisible */
+  transform: translateY(100%); /* Start moon below the button */
+}
+.sun {
+  opacity: 1; /* Sun is visible */
+  transform: translateY(0);
+}
+
+/* --- Dark Mode --- */
+[data-theme='dark'] .icon-container {
+  transform: rotate(360deg); /* Rotate the whole container for a nice effect */
+}
+[data-theme='dark'] .sun {
+  opacity: 0; /* Sun becomes invisible */
+  transform: translateY(-100%); /* Sun moves up out of view */
+}
+[data--theme='dark'] .moon {
+  opacity: 1; /* Moon becomes visible */
+  transform: translateY(0); /* Moon moves into view */
+}

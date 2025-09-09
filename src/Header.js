@@ -1,8 +1,9 @@
-// Header.js
+// File: src/Header.js
 import React, { useState, useEffect, useRef } from "react";
-import { DarkModeSwitch } from "react-toggle-dark-mode";
+import { DarkModeSwitch } from "react-toggle-dark-mode"; // Add this import
 import "./Header.css";
 
+// This throttle function is perfect, no changes needed
 const throttle = (func, limit) => {
   let inThrottle;
   return function () {
@@ -60,9 +61,7 @@ const Header = () => {
       <DarkModeSwitch
         checked={isDarkMode}
         onChange={toggleDarkMode}
-        size={30}
-        moonColor="white"
-        sunColor="black"
+        size={24} // A size of 24px fits nicely in the header
       />
     </header>
   );

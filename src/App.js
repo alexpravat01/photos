@@ -1,14 +1,12 @@
 import React from 'react';
 import './App.css';
 import Gallery from './Gallery';
-import Header from './Header'; // Import the new Header component
+import Header from './Header'; // Import the new Header
 
 function App() {
   return (
     <div className="App">
-      {/* Replace the old header and toggle with our new, single component */}
       <Header />
-
       <main>
         <Gallery />
       </main>

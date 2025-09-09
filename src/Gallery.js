@@ -32,7 +32,7 @@ const Gallery = () => {
     useEffect(() => {
         const fetchAndProcessPhotos = async () => {
           try {
-            const response = await fetch("https://q0p80ptzei.execute-api.us-east-2.amazonaws.com/prod/photos");
+            const response = await fetch("https://7sto4ek0ph.execute-api.us-east-2.amazonaws.com/default/getPravatPhotos");
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const initialPhotos = await response.json();
             if (!Array.isArray(initialPhotos)) return;
