@@ -7,14 +7,20 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 import 'react-lazy-load-image-component/src/effects/blur.css';
 import './Gallery.css';
 import { useIntersectionObserver } from './useIntersectionObserver';
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
 
 // --- GalleryItem Sub-component ---
-const GalleryItem = ({ photo }) => {
+const GalleryItem = ({ photo, photoIndex, onPhotoClick }) => {
   const [ref, isVisible] = useIntersectionObserver({ threshold: 0.1 });
   const paddingTop = (photo.height / photo.width) * 100;
 
   return (
-    <div ref={ref} className={`gallery-item ${photo.className || ''} ${isVisible ? 'is-visible' : ''}`}>
+    <div 
+      ref={ref} 
+      className={`gallery-item ${photo.className || ''} ${isVisible ? 'is-visible' : ''}`}
+      onClick={() => onPhotoClick(photoIndex)}
+    >
       <div className="gallery-item-content" style={{ paddingBottom: `${paddingTop}%` }}>
         <LazyLoadImage src={photo.src} alt={photo.alt} effect="blur" />
       </div>
@@ -28,6 +34,7 @@ const Gallery = () => {
     const isotopeRef = useRef(null);
     const [photosWithClass, setPhotosWithClass] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [index, setIndex] = useState(-1); 
 
     useEffect(() => {
         const fetchAndProcessPhotos = async () => {
@@ -135,15 +142,35 @@ const Gallery = () => {
     }
 
     return (
-        <div className="gallery-container">
-            <div ref={gridRef} className="gallery-grid">
-                <div className="grid-sizer"></div>
-                {photosWithClass.map(photo => (
-                    <GalleryItem key={photo.id} photo={photo} />
-                ))}
-            </div>
-        </div>
-    );
+      <div className="gallery-container">
+          <div ref={gridRef} className="gallery-grid">
+              <div className="grid-sizer"></div>
+              {/* 
+                STEP 3: Pass the photo's index and the click handler 
+                down to each GalleryItem.
+              */}
+              {photosWithClass.map((photo, photoIndex) => (
+                  <GalleryItem 
+                    key={photo.id} 
+                    photo={photo} 
+                    photoIndex={photoIndex}
+                    onPhotoClick={setIndex} // Pass the setIndex function as the handler
+                  />
+              ))}
+          </div>
+
+          {/*
+            STEP 4: Render the Lightbox component.
+            It will only be visible when the `index` is not -1.
+          */}
+          <Lightbox
+              open={index >= 0}
+              close={() => setIndex(-1)}
+              index={index}
+              slides={photosWithClass}
+          />
+      </div>
+  );
 };
 
 export default Gallery;

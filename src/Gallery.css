@@ -61,6 +61,11 @@
   filter: blur(0);
 }
 
+.gallery-grid .gallery-item {
+  margin-bottom: 10px; /* This rule should already exist */
+  cursor: pointer; /* <-- ADD THIS LINE */
+}
+
 /* =================================================================== */
 /* RESPONSIVE BREAKPOINTS (Scaled down gracefully)                     */
 /* =================================================================== */
