@@ -1,59 +1,18 @@
-.App-header {
+body {
+  --bg-color: #f0f2f5;
+  --text-color: #474747;
+  --header-bg: #f2f2f2;
+  --header-text: #474747;
   
-
-  /* Add some padding to give it space */
-  padding: 20px 40px;
-  
-  /* Keep the text color */
-  color: #444;  
-
-  /* Optional: Add a subtle shadow to lift it off the page */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  text-align: center; /* Or 'center' if you prefer */
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
-/* You might want to adjust the h1 size as well */
-.App-header h1 {
-  font-size: 1.8rem; /* A more reasonable font size */
-  margin: 0; /* Remove default margins from the h1 */
-  font-family: "Roboto", sans-serif;
-  font-weight: 900;
-  font-variant: small-caps;
-
+body[data-theme='dark'] {
+  --bg-color: #171717;
+  --text-color: #bfbfbf;
+  --header-bg: #1f1f1f;
+  --header-text: #bfbfbf;
 }
 
-/* Add this to your App.css */
-main {
-  background-color: #FAFAFA; /* A very subtle, warm off-white */
-  /* You might also want some padding on the main content area */
-  /* padding-bottom: 60px; */ 
-}
-
-/* Ensure the body or html doesn't have a conflicting background that hides this */
-/* You might want to remove any background-color from .App if it's there,
-   or ensure it's set to transparent */
-.App {
-  background-color: #FAFAFA; /* Remove or set to transparent if present */
-}
-
-.page-veil {
-  position: fixed; /* Cover the entire viewport */
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #FAF9F6; /* Your warm neutral white */
-  z-index: 9999; /* Ensure it's on top of everything */
-  opacity: 1;
-  
-  /* The fade-out animation */
-  transition: opacity 0.8s ease-in-out;
-  transition-delay: 0.6s; /* A slight delay before fading */
-}
-
-.page-veil.is-hidden {
-  opacity: 0;
-  
-  /* After fading out, make sure it can't be clicked or hovered */
-  pointer-events: none;
-}
