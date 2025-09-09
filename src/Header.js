@@ -1,52 +1,69 @@
-import React, { useState, useEffect, useRef } from 'react';
-import ThemeToggle from './ThemeToggle'; // We'll move the toggle inside the header
-import './Header.css';
+// Header.js
+import React, { useState, useEffect, useRef } from "react";
+import { DarkModeSwitch } from "react-toggle-dark-mode";
+import "./Header.css";
 
-// A simple throttle function to limit how often the scroll handler runs
 const throttle = (func, limit) => {
   let inThrottle;
-  return function() {
+  return function () {
     if (!inThrottle) {
       func.apply(this, arguments);
       inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+      setTimeout(() => (inThrottle = false), limit);
     }
   };
 };
 
 const Header = () => {
   const [isVisible, setIsVisible] = useState(true);
+  const [isDarkMode, setDarkMode] = useState(false);
   const lastScrollY = useRef(0);
 
+  // load saved theme or system preference
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    const prefersDark =
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const initial = saved ? saved === "dark" : prefersDark;
+    setDarkMode(initial);
+    document.body.setAttribute("data-theme", initial ? "dark" : "light");
+  }, []);
+
+  // toggle handler used by DarkModeSwitch
+  const toggleDarkMode = (checked) => {
+    setDarkMode(checked);
+    const newTheme = checked ? "dark" : "light";
+    document.body.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+  };
+
+  // header hide/show on scroll
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
-      // Hide header if scrolling down, show if scrolling up
       if (currentScrollY > 100 && currentScrollY > lastScrollY.current) {
-        setIsVisible(false); // Scrolling down
+        setIsVisible(false);
       } else {
-        setIsVisible(true); // Scrolling up
+        setIsVisible(true);
       }
-
-      // Remember the latest scroll position
       lastScrollY.current = currentScrollY;
     };
-
-    const throttledHandleScroll = throttle(handleScroll, 100);
-
-    window.addEventListener('scroll', throttledHandleScroll);
-
-    // Cleanup listener on component unmount
-    return () => {
-      window.removeEventListener('scroll', throttledHandleScroll);
-    };
+    const throttled = throttle(handleScroll, 100);
+    window.addEventListener("scroll", throttled);
+    return () => window.removeEventListener("scroll", throttled);
   }, []);
 
   return (
-    <header className={`main-header ${isVisible ? 'is-visible' : 'is-hidden'}`}>
-      <h1>Pravat's Photos</h1>
-      <ThemeToggle />
+    <header className={`main-header ${isVisible ? "is-visible" : "is-hidden"}`}>
+      <h1>Pravat&apos;s Photos</h1>
+      <DarkModeSwitch
+        checked={isDarkMode}
+        onChange={toggleDarkMode}
+        size={30}
+        moonColor="white"
+        sunColor="black"
+      />
     </header>
   );
 };
