@@ -5,6 +5,7 @@
 }
 
 .loading-message {
+  text-align: center;
   font-family: "Roboto", sans-serif;
   font-optical-sizing: auto;
   font-weight: 100;
