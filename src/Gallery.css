@@ -12,6 +12,8 @@
   font-style: normal;
   font-variation-settings:
     "wdth" 100;
+    position: sticky;
+    top: 2rem;
 
 }
 
