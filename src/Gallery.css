@@ -4,18 +4,28 @@
   margin: 60px auto;
 }
 
-.loading-message {
-  text-align: center;
-  font-family: "Roboto", sans-serif;
-  font-optical-sizing: auto;
-  font-weight: 100;
-  font-style: normal;
-  font-variation-settings:
-    "wdth" 100;
-    position: sticky;
-    top: 5rem;
-
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
 }
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #3498db;
+  border-radius: 50%;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 
 /* =================================================================== */
 /* Center the Isotope grid container                                   */
@@ -66,16 +76,17 @@ to {
 position: relative;
 display: block;
 height: 0;
-/* 
+/*
   CRITICAL FIX: We set the final opacity to 1 here and let the animation
   handle the starting state. This prevents the conflict.
 */
-opacity: 1; 
+opacity: 1;
 }
 
 /* 3. When the item is NOT YET visible, it's invisible */
 .gallery-grid .gallery-item:not(.is-visible) .gallery-item-content {
   opacity: 0;
+
 }
 
 /* 4. When the item IS visible, run the animation */

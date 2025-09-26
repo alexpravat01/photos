@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Isotope from 'isotope-layout';
 import 'isotope-packery';
 // You can now remove 'imagesloaded' if it's not used elsewhere
-// import imagesLoaded from 'imagesloaded'; 
+// import imagesLoaded from 'imagesloaded';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import 'react-lazy-load-image-component/src/effects/blur.css';
 import './Gallery.css';
@@ -19,8 +19,8 @@ const GalleryItem = ({ photo, photoIndex, onPhotoClick }) => {
   const paddingTop = (photo.height / photo.width) * 100;
 
   return (
-    <div 
-      ref={ref} 
+    <div
+      ref={ref}
       className={`gallery-item ${photo.className || ''} ${isVisible ? 'is-visible' : ''}`}
       onClick={() => onPhotoClick(photoIndex)}
     >
@@ -37,7 +37,7 @@ const Gallery = () => {
     const isotopeRef = useRef(null);
     const [photosWithClass, setPhotosWithClass] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [index, setIndex] = useState(-1); 
+    const [index, setIndex] = useState(-1);
 
     useEffect(() => {
         const fetchAndProcessPhotos = async () => {
@@ -46,7 +46,7 @@ const Gallery = () => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const initialPhotos = await response.json();
             if (!Array.isArray(initialPhotos)) return;
-  
+
             const photosWithDims = await Promise.all(
               initialPhotos.map(p => new Promise(res => {
                 const img = new Image();
@@ -55,18 +55,18 @@ const Gallery = () => {
                 img.onerror = () => res({ ...p, width: 1, height: 1 });
               }))
             );
-  
+
             // ===================================================================
             // !! FINAL CLASSIFICATION LOGIC FOR 6-COLUMN LAYOUT !!
             // ===================================================================
             const photosWithClassName = photosWithDims.map(photo => {
                 const ratio = photo.width / photo.height;
                 let className;
-  
+
                 // 16:9 is ~1.77. This catches true widescreen shots.
                 if (ratio > 1.7) {
                   className = 'is-ultrawide'; // 4 columns
-                } 
+                }
                 // Catches all standard landscape photos (e.g., 3:2, 4:3)
                 else if (ratio > 1.0 && ratio <= 1.7) {
                   className = 'is-horizontal'; // 3 columns
@@ -81,24 +81,25 @@ const Gallery = () => {
                 }
                 return { ...photo, className };
               });
-  
-  
+
+
             const shuffledPhotos = [...photosWithClassName].sort(() => 0.5 - Math.random());
             setPhotosWithClass(shuffledPhotos);
-  
+
           } catch (error) {
             console.error("Error processing photos:", error);
           } finally {
             setIsLoading(false);
           }
         };
-  
+
         fetchAndProcessPhotos();
       }, []);
 
 
 
-  
+
+
     // Isotope initialization useEffect - WITHOUT imagesLoaded
     useEffect(() => {
         if (photosWithClass.length > 0 && gridRef.current) {
@@ -141,21 +142,25 @@ const Gallery = () => {
     useEffect(() => () => isotopeRef.current?.destroy(), []);
 
     if (isLoading) {
-        return <div className="loading-message">Loading Photos...</div>;
+      return (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+        </div>
+      );
     }
 
     return (
       <div className="gallery-container">
           <div ref={gridRef} className="gallery-grid">
               <div className="grid-sizer"></div>
-              {/* 
-                STEP 3: Pass the photo's index and the click handler 
+              {/*
+                STEP 3: Pass the photo's index and the click handler
                 down to each GalleryItem.
               */}
               {photosWithClass.map((photo, photoIndex) => (
-                  <GalleryItem 
-                    key={photo.id} 
-                    photo={photo} 
+                  <GalleryItem
+                    key={photo.id}
+                    photo={photo}
                     photoIndex={photoIndex}
                     onPhotoClick={setIndex} // Pass the setIndex function as the handler
                   />
@@ -171,7 +176,7 @@ const Gallery = () => {
               close={() => setIndex(-1)}
               index={index}
               slides={photosWithClass}
-              plugins={[Thumbnails]} 
+              plugins={[Thumbnails]}
 
           />
       </div>
