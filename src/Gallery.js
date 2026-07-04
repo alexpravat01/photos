@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Isotope from 'isotope-layout';
 import 'isotope-packery';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
@@ -24,8 +24,8 @@ const classifyPhoto = (width, height) => {
 };
 
 // Neutral placeholder used the instant a photo shows up, before we know
-// its real dimensions. This is what lets the grid render immediately
-// instead of blocking on every photo finishing its download.
+// its real dimensions. Only affects grid sizing - the lightbox never
+// sees this.
 const PLACEHOLDER_WIDTH = 4;
 const PLACEHOLDER_HEIGHT = 3;
 const PLACEHOLDER_CLASS = classifyPhoto(PLACEHOLDER_WIDTH, PLACEHOLDER_HEIGHT);
@@ -65,7 +65,17 @@ const GalleryItem = ({ photo, photoIndex, onPhotoClick, onImageLoad }) => {
 const Gallery = () => {
     const gridRef = useRef(null);
     const isotopeRef = useRef(null);
-    const [photosWithClass, setPhotosWithClass] = useState([]);
+
+    // `photos` is the source of truth for the lightbox: set once, right
+    // after the initial fetch, and never touched again. This is what
+    // keeps the lightbox's slide list stable while it's open.
+    const [photos, setPhotos] = useState([]);
+
+    // `photoMeta` holds per-photo sizing info as it becomes known (either
+    // from the API up front, or from the grid's own image onLoad). This
+    // updates constantly and only ever affects the grid layout.
+    const [photoMeta, setPhotoMeta] = useState({});
+
     const [isLoading, setIsLoading] = useState(true);
     const [index, setIndex] = useState(-1);
 
@@ -80,19 +90,22 @@ const Gallery = () => {
             const initialPhotos = await response.json();
             if (!Array.isArray(initialPhotos)) return;
 
-            const photosWithPlaceholders = initialPhotos.map(photo => {
-              const hasDims = Boolean(photo.width && photo.height);
-              return {
-                ...photo,
-                width: hasDims ? photo.width : PLACEHOLDER_WIDTH,
-                height: hasDims ? photo.height : PLACEHOLDER_HEIGHT,
-                className: hasDims ? classifyPhoto(photo.width, photo.height) : PLACEHOLDER_CLASS,
-                dimsKnown: hasDims,
-              };
-            });
+            const shuffled = [...initialPhotos].sort(() => 0.5 - Math.random());
+            setPhotos(shuffled);
 
-            const shuffled = [...photosWithPlaceholders].sort(() => 0.5 - Math.random());
-            setPhotosWithClass(shuffled);
+            // Seed meta for any photos the API already gave dimensions for.
+            const seededMeta = {};
+            shuffled.forEach(photo => {
+              if (photo.width && photo.height) {
+                seededMeta[photo.id] = {
+                  width: photo.width,
+                  height: photo.height,
+                  className: classifyPhoto(photo.width, photo.height),
+                  dimsKnown: true,
+                };
+              }
+            });
+            setPhotoMeta(seededMeta);
 
           } catch (error) {
             console.error("Error fetching photos:", error);
@@ -105,22 +118,37 @@ const Gallery = () => {
     }, []);
 
     // Fired by a GalleryItem once its actual <img> has finished loading in
-    // the browser. Swaps the placeholder aspect ratio for the real one so
-    // Isotope can reflow just that item into its correct spot.
+    // the browser. Only updates photoMeta - never touches `photos`, so
+    // the lightbox's slides prop is completely unaffected by this.
     const handleImageLoad = useCallback((photoId, width, height) => {
-        setPhotosWithClass(prev =>
-          prev.map(photo =>
-            photo.id === photoId && !photo.dimsKnown
-              ? { ...photo, width, height, className: classifyPhoto(width, height), dimsKnown: true }
-              : photo
-          )
-        );
+        setPhotoMeta(prev => {
+          if (prev[photoId]?.dimsKnown) return prev;
+          return {
+            ...prev,
+            [photoId]: { width, height, className: classifyPhoto(width, height), dimsKnown: true },
+          };
+        });
     }, []);
+
+    // Merge the stable photo list with whatever sizing info is currently
+    // known, for grid rendering only.
+    const displayPhotos = useMemo(() => {
+      return photos.map(photo => {
+        const meta = photoMeta[photo.id];
+        return {
+          ...photo,
+          width: meta?.width || PLACEHOLDER_WIDTH,
+          height: meta?.height || PLACEHOLDER_HEIGHT,
+          className: meta?.className || PLACEHOLDER_CLASS,
+          dimsKnown: Boolean(meta?.dimsKnown),
+        };
+      });
+    }, [photos, photoMeta]);
 
     // Isotope initialization / reflow - runs on the initial render and
     // again every time a photo's real dimensions come in.
     useEffect(() => {
-        if (photosWithClass.length > 0 && gridRef.current) {
+        if (displayPhotos.length > 0 && gridRef.current) {
           const timer = setTimeout(() => {
             if (gridRef.current) {
               if (!isotopeRef.current) {
@@ -143,7 +171,7 @@ const Gallery = () => {
 
           return () => clearTimeout(timer);
         }
-    }, [photosWithClass]);
+    }, [displayPhotos]);
 
 
     // Resize and cleanup useEffects
@@ -168,7 +196,7 @@ const Gallery = () => {
       <div className="gallery-container">
           <div ref={gridRef} className="gallery-grid">
               <div className="grid-sizer"></div>
-              {photosWithClass.map((photo, photoIndex) => (
+              {displayPhotos.map((photo, photoIndex) => (
                   <GalleryItem
                     key={photo.id}
                     photo={photo}
@@ -179,11 +207,17 @@ const Gallery = () => {
               ))}
           </div>
 
+          {/*
+            The lightbox reads from `photos`, not `displayPhotos` - a
+            stable list that's set once and never mutated again, so
+            paging through slides never gets disrupted by the grid's
+            ongoing progressive loading.
+          */}
           <Lightbox
               open={index >= 0}
               close={() => setIndex(-1)}
               index={index}
-              slides={photosWithClass}
+              slides={photos}
               plugins={[Thumbnails]}
           />
       </div>
