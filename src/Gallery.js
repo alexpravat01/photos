@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Isotope from 'isotope-layout';
 import 'isotope-packery';
-// You can now remove 'imagesloaded' if it's not used elsewhere
-// import imagesLoaded from 'imagesloaded'; 
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import 'react-lazy-load-image-component/src/effects/blur.css';
 import './Gallery.css';
@@ -10,22 +8,54 @@ import { useIntersectionObserver } from './useIntersectionObserver';
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
-import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 
+// Stable reference so useIntersectionObserver's effect doesn't tear down
+// and rebuild its IntersectionObserver on every single render.
+const OBSERVER_OPTIONS = { threshold: 0.1 };
+
+// A photo's grid span is driven purely by its aspect ratio.
+const classifyPhoto = (width, height) => {
+  const ratio = width / height;
+  if (ratio > 1.7) return 'is-ultrawide';   // widescreen -> 4 columns
+  if (ratio > 1.0) return 'is-horizontal';  // standard landscape -> 2 columns
+  if (ratio >= 0.8) return 'is-portrait';   // square-ish -> 2 columns
+  return 'is-vertical';                     // tall portrait -> 2 columns
+};
+
+// Neutral placeholder used the instant a photo shows up, before we know
+// its real dimensions. This is what lets the grid render immediately
+// instead of blocking on every photo finishing its download.
+const PLACEHOLDER_WIDTH = 4;
+const PLACEHOLDER_HEIGHT = 3;
+const PLACEHOLDER_CLASS = classifyPhoto(PLACEHOLDER_WIDTH, PLACEHOLDER_HEIGHT);
+
 // --- GalleryItem Sub-component ---
-const GalleryItem = ({ photo, photoIndex, onPhotoClick }) => {
-  const [ref, isVisible] = useIntersectionObserver({ threshold: 0.1 });
+const GalleryItem = ({ photo, photoIndex, onPhotoClick, onImageLoad }) => {
+  const [ref, isVisible] = useIntersectionObserver(OBSERVER_OPTIONS);
   const paddingTop = (photo.height / photo.width) * 100;
 
+  const handleLoad = (e) => {
+    const { naturalWidth, naturalHeight } = e.target;
+    if (naturalWidth && naturalHeight) {
+      onImageLoad(photo.id, naturalWidth, naturalHeight);
+    }
+  };
+
   return (
-    <div 
-      ref={ref} 
+    <div
+      ref={ref}
       className={`gallery-item ${photo.className || ''} ${isVisible ? 'is-visible' : ''}`}
       onClick={() => onPhotoClick(photoIndex)}
     >
       <div className="gallery-item-content" style={{ paddingBottom: `${paddingTop}%` }}>
-        <LazyLoadImage src={photo.src} alt={photo.alt} effect="blur" />
+        <LazyLoadImage
+          src={photo.src}
+          alt={photo.alt}
+          effect="blur"
+          decoding="async"
+          onLoad={handleLoad}
+        />
       </div>
     </div>
   );
@@ -37,69 +67,58 @@ const Gallery = () => {
     const isotopeRef = useRef(null);
     const [photosWithClass, setPhotosWithClass] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [index, setIndex] = useState(-1); 
+    const [index, setIndex] = useState(-1);
 
+    // Fetch just the photo list - no per-image dimension probing here,
+    // so this resolves as soon as the API responds instead of waiting
+    // on every photo to fully download first.
     useEffect(() => {
-        const fetchAndProcessPhotos = async () => {
+        const fetchPhotos = async () => {
           try {
             const response = await fetch("https://7sto4ek0ph.execute-api.us-east-2.amazonaws.com/default/getPravatPhotos");
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const initialPhotos = await response.json();
             if (!Array.isArray(initialPhotos)) return;
-  
-            const photosWithDims = await Promise.all(
-              initialPhotos.map(p => new Promise(res => {
-                const img = new Image();
-                img.src = p.src;
-                img.onload = () => res({ ...p, width: img.naturalWidth, height: img.naturalHeight });
-                img.onerror = () => res({ ...p, width: 1, height: 1 });
-              }))
-            );
-  
-            // ===================================================================
-            // !! FINAL CLASSIFICATION LOGIC FOR 6-COLUMN LAYOUT !!
-            // ===================================================================
-            const photosWithClassName = photosWithDims.map(photo => {
-                const ratio = photo.width / photo.height;
-                let className;
-  
-                // 16:9 is ~1.77. This catches true widescreen shots.
-                if (ratio > 1.7) {
-                  className = 'is-ultrawide'; // 4 columns
-                } 
-                // Catches all standard landscape photos (e.g., 3:2, 4:3)
-                else if (ratio > 1.0 && ratio <= 1.7) {
-                  className = 'is-horizontal'; // 3 columns
-                }
-                // Catches squares and 4x5 portraits (ratio for 4x5 is 0.8)
-                else if (ratio >= 0.8 && ratio <= 1.0) {
-                  className = 'is-portrait'; // 2 columns
-                }
-                // Catches taller, skinnier portraits (e.g., 2:3)
-                else {
-                  className = 'is-vertical'; // 3 columns
-                }
-                return { ...photo, className };
-              });
-  
-  
-            const shuffledPhotos = [...photosWithClassName].sort(() => 0.5 - Math.random());
-            setPhotosWithClass(shuffledPhotos);
-  
+
+            const photosWithPlaceholders = initialPhotos.map(photo => {
+              const hasDims = Boolean(photo.width && photo.height);
+              return {
+                ...photo,
+                width: hasDims ? photo.width : PLACEHOLDER_WIDTH,
+                height: hasDims ? photo.height : PLACEHOLDER_HEIGHT,
+                className: hasDims ? classifyPhoto(photo.width, photo.height) : PLACEHOLDER_CLASS,
+                dimsKnown: hasDims,
+              };
+            });
+
+            const shuffled = [...photosWithPlaceholders].sort(() => 0.5 - Math.random());
+            setPhotosWithClass(shuffled);
+
           } catch (error) {
-            console.error("Error processing photos:", error);
+            console.error("Error fetching photos:", error);
           } finally {
             setIsLoading(false);
           }
         };
-  
-        fetchAndProcessPhotos();
-      }, []);
 
+        fetchPhotos();
+    }, []);
 
+    // Fired by a GalleryItem once its actual <img> has finished loading in
+    // the browser. Swaps the placeholder aspect ratio for the real one so
+    // Isotope can reflow just that item into its correct spot.
+    const handleImageLoad = useCallback((photoId, width, height) => {
+        setPhotosWithClass(prev =>
+          prev.map(photo =>
+            photo.id === photoId && !photo.dimsKnown
+              ? { ...photo, width, height, className: classifyPhoto(width, height), dimsKnown: true }
+              : photo
+          )
+        );
+    }, []);
 
-  
-    // Isotope initialization useEffect - WITHOUT imagesLoaded
+    // Isotope initialization / reflow - runs on the initial render and
+    // again every time a photo's real dimensions come in.
     useEffect(() => {
         if (photosWithClass.length > 0 && gridRef.current) {
           const timer = setTimeout(() => {
@@ -109,13 +128,10 @@ const Gallery = () => {
                   layoutMode: 'packery',
                   itemSelector: '.gallery-item',
                   percentPosition: true,
-                  // =========================================================
-                  // !! ADD THIS LINE TO CENTER THE ENTIRE GRID !!
-                  // =========================================================
                   isFitWidth: true,
                   packery: {
                     columnWidth: '.grid-sizer',
-                    gutter: 10 // This is our source of truth for spacing
+                    gutter: 10
                   }
                 });
               } else {
@@ -141,38 +157,34 @@ const Gallery = () => {
     useEffect(() => () => isotopeRef.current?.destroy(), []);
 
     if (isLoading) {
-        return <div className="loading-message">Loading Photos...</div>;
+        return (
+          <div className="loading-message">
+            <div className="spinner" role="status" aria-label="Loading photos" />
+          </div>
+        );
     }
 
     return (
       <div className="gallery-container">
           <div ref={gridRef} className="gallery-grid">
               <div className="grid-sizer"></div>
-              {/* 
-                STEP 3: Pass the photo's index and the click handler 
-                down to each GalleryItem.
-              */}
               {photosWithClass.map((photo, photoIndex) => (
-                  <GalleryItem 
-                    key={photo.id} 
-                    photo={photo} 
+                  <GalleryItem
+                    key={photo.id}
+                    photo={photo}
                     photoIndex={photoIndex}
-                    onPhotoClick={setIndex} // Pass the setIndex function as the handler
+                    onPhotoClick={setIndex}
+                    onImageLoad={handleImageLoad}
                   />
               ))}
           </div>
 
-          {/*
-            STEP 4: Render the Lightbox component.
-            It will only be visible when the `index` is not -1.
-          */}
           <Lightbox
               open={index >= 0}
               close={() => setIndex(-1)}
               index={index}
               slides={photosWithClass}
-              plugins={[Thumbnails]} 
-
+              plugins={[Thumbnails]}
           />
       </div>
   );
